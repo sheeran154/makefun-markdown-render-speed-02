@@ -1,19 +1,27 @@
-// Fast marked drop-in driver: reads every case from /input (or
-// MAKEFUN_INPUT_DIR), renders each one alone with parse(), and writes the
-// HTML strings, in order, to /output (or MAKEFUN_OUTPUT_DIR)/html.json.
+// Entry driver: render every case in the input directory with parse()
+// and write the resulting HTML strings, in order, to html.json in the
+// output directory. Input/output paths come from the MAKEFUN_*
+// environment variables when set, defaulting to /input and /output.
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { parse } from './parse.js';
 
-type Case = { id: string; markdown: string };
-
-const inDir: string = process.env.MAKEFUN_INPUT_DIR ?? '/input';
-const outDir: string = process.env.MAKEFUN_OUTPUT_DIR ?? '/output';
-
-const cases: Case[] = JSON.parse(readFileSync(join(inDir, 'cases.json'), 'utf8'));
-const html: string[] = new Array(cases.length);
-for (let i = 0; i < cases.length; i++) {
-  html[i] = parse(cases[i].markdown);
+interface InputCase {
+  id: string;
+  markdown: string;
 }
-mkdirSync(outDir, { recursive: true });
-writeFileSync(join(outDir, 'html.json'), JSON.stringify(html));
+
+const inputDir = process.env.MAKEFUN_INPUT_DIR ?? '/input';
+const outputDir = process.env.MAKEFUN_OUTPUT_DIR ?? '/output';
+
+const inputCases: InputCase[] = JSON.parse(
+  readFileSync(join(inputDir, 'cases.json'), 'utf8'),
+);
+
+const rendered: string[] = [];
+for (const inputCase of inputCases) {
+  rendered.push(parse(inputCase.markdown));
+}
+
+mkdirSync(outputDir, { recursive: true });
+writeFileSync(join(outputDir, 'html.json'), JSON.stringify(rendered));
